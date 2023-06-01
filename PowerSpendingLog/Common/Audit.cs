@@ -13,10 +13,10 @@ namespace Common
         public MessageType MessageType { get; set; }
         public string Message { get; set; }
 
-        private static int _nextId = 0;
+        public static int _nextId = 0;
         public Audit()
         {
-            Id = _nextId++;
+            Id = _nextId;
         }
     }
 }

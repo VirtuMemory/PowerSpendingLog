@@ -41,10 +41,24 @@ namespace Service
             StreamReader reader = new StreamReader(workLoad.MS);
             string text = reader.ReadToEnd();
 
+
             // Parsiranje CSV stringa
             var lines = text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+
+            var linesCount = lines.Length;
+
+            if (lines[0].Contains("TIME_STAMP"))
+            {
+                linesCount--;
+            }
+
+            if (lines[lines.Length - 1].Equals(""))
+            {
+                linesCount--;
+            }
+
             // Provera da li je broj linija 23, 24 ili 25
-            if (lines.Length < 23 || lines.Length > 25)
+            if (linesCount < 23 || linesCount > 25)
             {
                 string message = $"Nepravilan broj linija u fajlu {workLoad.FileName}. Očekuje se 23, 24 ili 25 linija, ali je pročitano {lines.Length}.";
                 result.ResultType = ResultTypes.Failed;
@@ -55,8 +69,13 @@ namespace Service
             {
                 foreach (var line in lines)
                 {
+                    if (line.Equals("")) 
+                    {
+                        continue;
+                    }
                     // Deljenje svake linije na sat i potrošnju
                     var parts = line.Split(',');
+
 
                     if (parts.Length != 2)
                     {
@@ -80,12 +99,13 @@ namespace Service
 
             // Kreiranje objekta ImportedFile
             CreateImportedFile(workLoad.FileName);
+            Console.WriteLine(workLoad.FileName);
             return result;
         }
 
         private void CreateAudit(string message)
         {
-            var audit = new Audit { Message = message };
+            var audit = new Audit { Message = message, Timestamp = DateTime.Now };
             _loadRepository.AddAudit(audit);
         }
 

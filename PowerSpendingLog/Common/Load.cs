@@ -18,11 +18,11 @@ namespace Common
         public int ForecastFileId { get; set; }
         public int MeasuredFileId { get; set; }
 
-        private static int _nextId = 0;
+        public static int _nextId = 0;
 
         public Load()
         {
-            Id = _nextId++;
+            Id = _nextId ;
         }
 
         public void CalculateDeviations()

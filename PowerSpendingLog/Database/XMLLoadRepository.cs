@@ -11,14 +11,15 @@ namespace Database
 {
     public class XMLLoadRepository : ILoadRepository
     {
-        private readonly string _auditFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Audits.xml");
-        private readonly string _loadFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Loads.xml");
-        private readonly string _importedFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "ImportedFiles.xml");
+        private readonly string _auditFilePath =  "Audits.xml";
+        private readonly string _loadFilePath =  "Loads.xml";
+        private readonly string _importedFilePath =  "ImportedFiles.xml";
 
         public void AddAudit(Audit audit)
         {
             var audits = DeserializeFromFile<List<Audit>>(_auditFilePath) ?? new List<Audit>();
             audits.Add(audit);
+            Audit._nextId++;
             SerializeToFile(audits, _auditFilePath);
         }
 
@@ -26,6 +27,7 @@ namespace Database
         {
             var importedFiles = DeserializeFromFile<List<ImportedFile>>(_importedFilePath) ?? new List<ImportedFile>();
             importedFiles.Add(importedFile);
+            ImportedFile._nextId++;
             SerializeToFile(importedFiles, _importedFilePath);
         }
 
@@ -38,9 +40,16 @@ namespace Database
         public void UpdateLoad(Load load)
         {
             var loads = DeserializeFromFile<List<Load>>(_loadFilePath);
-            if (loads == null) throw new ArgumentException($"No load with ID {load.Id} exists to update.");
+            if (loads == null)
+            {
+                loads = new List<Load>();
+            }
             var existingLoadIndex = loads.FindIndex(l => l.Id == load.Id);
-            if (existingLoadIndex == -1) loads.Add(load);
+            if (existingLoadIndex == -1) {
+                loads.Add(load);
+                Load._nextId++; 
+
+            }
             else loads[existingLoadIndex] = load;
             SerializeToFile(loads, _loadFilePath);
         }

@@ -11,10 +11,10 @@ namespace Common
         public int Id { get; set; }
         public string FileName { get; set; }
 
-        private static int _nextId = 0;
+        public static int _nextId = 0;
         public ImportedFile()
         {
-            Id = _nextId++;
+            Id = _nextId;
         }
     }
 }
