@@ -66,7 +66,7 @@ namespace Service
 
             if (!_fileProcessingHelper.IsCorrectLinesCount(lines))
             {
-                string message = $"Nepravilan broj linija u fajlu {workLoad.FileName}. Očekuje se 23, 24 ili 25 linija, ali je pročitano {_fileProcessingHelper.CalculateLinesCount(lines)}.";
+                string message = $"Incorrect number of lines in the file {workLoad.FileName}. Expected 23, 24, or 25 lines, but {_fileProcessingHelper.CalculateLinesCount(lines)} were read.";
                 result = _fileProcessingHelper.CreateResultAndAudit(ResultTypes.Failed, message, _loadRepository);
             }
             else
@@ -76,7 +76,7 @@ namespace Service
             }
             _fileProcessingHelper.CreateImportedFile(workLoad.FileName, _loadRepository);
             processedRows = 1;
-            Console.WriteLine("Zavrsena obrada: " + workLoad.FileName);
+            Console.WriteLine("Data processing completed. File: " + workLoad.FileName);
             return result;
         }
 
@@ -104,7 +104,7 @@ namespace Service
 
                 if (parts.Length != 2)
                 {
-                    string message = $"Linija '{line}' u fajlu {workLoad.FileName} nije pravilno formatirana.";
+                    string message = $"Line '{line}' in the file {workLoad.FileName} is not properly formatted.";
                     result =_fileProcessingHelper.CreateResultAndAudit(ResultTypes.Failed, message, _loadRepository);
                     break;
                 }

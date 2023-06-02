@@ -11,12 +11,12 @@ namespace Service
         {
             return fileName.StartsWith("forecast") ? LoadType.Forecast
                           : fileName.StartsWith("measured") ? LoadType.Measured
-                          : throw new FormatException("Nepravilan tip datoteke.");
+                          : throw new FormatException("Unknown file type.");
         }
 
         public string ReadWorkLoadText(WorkLoad workLoad)
         {
-            workLoad.MS.Position = 0; // Resetujemo poziciju na početak
+            workLoad.MS.Position = 0; 
             StreamReader reader = new StreamReader(workLoad.MS);
             return reader.ReadToEnd();
         }

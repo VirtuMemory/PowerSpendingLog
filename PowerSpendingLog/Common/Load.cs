@@ -44,7 +44,7 @@ namespace Common
                     SquaredDeviation = Math.Pow((MeasuredValue - ForecastValue) / MeasuredValue, 2);
                     return true;
                 default:
-                    throw new InvalidOperationException($"Nepoznat metod za izračunavanje odstupanja: {method}");
+                    throw new InvalidOperationException($"Unknown method for calculating deviation: {method}");
             }
         }
     }

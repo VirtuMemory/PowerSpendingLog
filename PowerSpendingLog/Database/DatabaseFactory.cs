@@ -19,7 +19,7 @@ namespace Database
                 case DBType.XML:
                     return new XMLLoadRepository();
                 default:
-                    throw new InvalidOperationException($"Nepoznat tip baze podataka: {databaseType}");
+                    throw new InvalidOperationException($"Unknown DB type: {databaseType}");
             }
         }
     }

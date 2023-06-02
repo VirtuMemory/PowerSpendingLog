@@ -20,18 +20,18 @@ namespace Client
             ILoadService proxy = factory.CreateChannel();
             while (true)
             {
-                Console.WriteLine("Unesite putanju direktorijuma iz kojeg zelite da uciatte .csv fajlove");
+                Console.WriteLine("Enter the directory path from which you want to load .csv files");
                 var path = Console.ReadLine();
                 if (!Directory.Exists(path))
                 {
-                    Console.WriteLine("Uneli ste ne postojecu putanju, pokusajte ponovo");
+                    Console.WriteLine("You have entered a non-existent path, please try again");
                     continue;
                 }
 
                 WorkLoadSender sender = new WorkLoadSender(type, path, proxy);
                 sender.SendFiles();
 
-                Console.WriteLine("Unesite EXIT za izlazak iz programa ili bilo koje dugme da nastavite sa unosom");
+                Console.WriteLine("Enter EXIT to exit the program or any key to continue with the input");
                 if (Console.ReadLine().ToUpper().Equals("EXIT"))
                     break;
             }

@@ -14,7 +14,7 @@ namespace Service
             using (ServiceHost host = new ServiceHost(typeof(LoadService)))
             {
                 host.Open();
-                Console.WriteLine("Servis je uspesno pokrenut ");
+                Console.WriteLine("The service has successfully started. ");
                 Console.ReadKey();
                 host.Close();
             }
