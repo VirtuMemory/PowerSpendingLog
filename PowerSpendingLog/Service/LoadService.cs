@@ -1,7 +1,6 @@
 ﻿using Common;
 using Database;
 using System;
-using System.IO;
 
 namespace Service
 {
@@ -10,29 +9,42 @@ namespace Service
         public delegate void UpdateDatabaseHandler(Load load);
         public event UpdateDatabaseHandler UpdateDatabase;
         private ILoadRepository _loadRepository;
+        private FileProcessingHelper _fileProcessingHelper;
         private bool db = false;
         private int processedRows = 1;
         private int totalRows = 0;
         private static int ForecastFileId = -1;
         private static int MeasuredFileId = -1;
 
+        public LoadService()
+        {
+            _fileProcessingHelper = new FileProcessingHelper();
+        }
+
+        private void UpdateLoadInDatabase(Load load)
+        {
+            _loadRepository.UpdateLoad(load);
+        }
 
         private void ProcessRow(DateTime timeStemp)
         {
-            
-            if (processedRows == totalRows)
+            if (processedRows++ == totalRows)
             {
                 bool done = false;
-                foreach(Load load in _loadRepository.GetAllLoads(timeStemp))
+                foreach (Load load in _loadRepository.GetAllLoads(timeStemp))
                 {
-                    done =  load.CalculateDeviations();
+                    done = load.CalculateDeviations();
                     UpdateDatabase?.Invoke(load);
-
                 }
                 if (done)
                     Console.WriteLine($"DB updated with calculated deviations for {timeStemp.ToString("yyyy MM dd")} Loads");
             }
-            processedRows++;
+        }
+
+        public void SetLoadRepository(DBType db)
+        {
+            _loadRepository = DatabaseFactory.CreateDatabase(db);
+            UpdateDatabase += UpdateLoadInDatabase;
         }
 
         public Result ImportWorkLoad(WorkLoad workLoad)
@@ -40,24 +52,36 @@ namespace Service
             Result result = new Result();
             if (!db)
             {
-                _loadRepository = DatabaseFactory.CreateDatabase(workLoad.DbType);
-                if (_loadRepository is XMLLoadRepository)
-                {
-                    UpdateDatabase += _loadRepository.UpdateLoad;
-                }
-                else if (_loadRepository is InMemoryLoadRepository)
-                {
-                    UpdateDatabase += _loadRepository.UpdateLoad;
-                }
+                SetLoadRepository(workLoad.DbType);
                 db = true;
             }
 
-
             // Provera tipa datoteke
-            var fileType = workLoad.FileName.StartsWith("forecast") ? LoadType.Forecast
-                          : workLoad.FileName.StartsWith("measured") ? LoadType.Measured
-                          : throw new FormatException("Nepravilan tip datoteke.");
+            var fileType = _fileProcessingHelper.ParseLoadType(workLoad.FileName);
+            SetFileId(fileType);
 
+            string text = _fileProcessingHelper.ReadWorkLoadText(workLoad);
+
+            var lines = _fileProcessingHelper.ParseCSVText(text);
+
+            if (!_fileProcessingHelper.IsCorrectLinesCount(lines))
+            {
+                string message = $"Nepravilan broj linija u fajlu {workLoad.FileName}. Očekuje se 23, 24 ili 25 linija, ali je pročitano {_fileProcessingHelper.CalculateLinesCount(lines)}.";
+                result = _fileProcessingHelper.CreateResultAndAudit(ResultTypes.Failed, message, _loadRepository);
+            }
+            else
+            {
+                totalRows = _fileProcessingHelper.CalculateLinesCount(lines);
+                result = ProcessWorkLoadLines(lines, workLoad, fileType);
+            }
+            _fileProcessingHelper.CreateImportedFile(workLoad.FileName, _loadRepository);
+            processedRows = 1;
+            Console.WriteLine("Zavrsena obrada: " + workLoad.FileName);
+            return result;
+        }
+
+        private void SetFileId(LoadType fileType)
+        {
             if (fileType == LoadType.Forecast)
             {
                 ForecastFileId++;
@@ -66,80 +90,33 @@ namespace Service
             {
                 MeasuredFileId++;
             }
-
-            // Čitanje svih linija iz CSV datoteke
-            workLoad.MS.Position = 0; // Resetujemo poziciju na početak
-            StreamReader reader = new StreamReader(workLoad.MS);
-            string text = reader.ReadToEnd();
-
-
-            // Parsiranje CSV stringa
-            var lines = text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-            var linesCount = lines.Length;
-
-            if (lines[0].Contains("TIME_STAMP"))
-            {
-                linesCount--;
-            }
-
-            if (lines[lines.Length - 1].Equals(""))
-            {
-                linesCount--;
-            }
-
-            // Provera da li je broj linija 23, 24 ili 25
-            if (linesCount < 23 || linesCount > 25)
-            {
-                string message = $"Nepravilan broj linija u fajlu {workLoad.FileName}. Očekuje se 23, 24 ili 25 linija, ali je pročitano {lines.Length}.";
-                result.ResultType = ResultTypes.Failed;
-                result.ResultMessage = message;
-                CreateAudit(message);
-            }
-            else
-            {
-                totalRows = linesCount;
-                foreach (var line in lines)
-                {
-                    if (line.Equals("")) 
-                    {
-                        continue;
-                    }
-                    // Deljenje svake linije na sat i potrošnju
-                    var parts = line.Split(',');
-
-
-                    if (parts.Length != 2)
-                    {
-                        string message = $"Linija '{line}' u fajlu {workLoad.FileName} nije pravilno formatirana.";
-                        result.ResultType = ResultTypes.Failed;
-                        result.ResultMessage = message;
-                        CreateAudit(message);
-                        break;
-                    }
-
-                    if (parts[0].Equals("TIME_STAMP"))
-                        continue;
-
-                    var time = parts[0];
-                    var consumption = double.Parse(parts[1]);
-
-                    // Kreiranje ili ažuriranje objekta Load
-                    CreateOrUpdateLoad(DateTime.Parse(time), consumption, fileType);
-                }
-            }
-
-            // Kreiranje objekta ImportedFile
-            CreateImportedFile(workLoad.FileName);
-            processedRows = 1;
-            Console.WriteLine(workLoad.FileName);
-            return result;
         }
 
-        private void CreateAudit(string message)
+        private Result ProcessWorkLoadLines(string[] lines, WorkLoad workLoad, LoadType fileType)
         {
-            var audit = new Audit { Message = message, Timestamp = DateTime.Now };
-            _loadRepository.AddAudit(audit);
+            Result result = new Result();
+
+            foreach (string line in lines)
+            {
+                if (line.Equals("") || line.Contains("TIME_STAMP")) continue;
+
+                var parts = line.Split(',');
+
+                if (parts.Length != 2)
+                {
+                    string message = $"Linija '{line}' u fajlu {workLoad.FileName} nije pravilno formatirana.";
+                    result =_fileProcessingHelper.CreateResultAndAudit(ResultTypes.Failed, message, _loadRepository);
+                    break;
+                }
+
+                var time = parts[0];
+                var consumption = double.Parse(parts[1]);
+
+                // Kreiranje ili ažuriranje objekta Load
+                CreateOrUpdateLoad(DateTime.Parse(time), consumption, fileType);
+                ProcessRow(DateTime.Parse(time));
+            }
+            return result;
         }
 
         private void CreateOrUpdateLoad(DateTime timestamp, double consumption, LoadType loadType)
@@ -156,14 +133,9 @@ namespace Service
                 load.MeasuredValue = consumption;
                 load.MeasuredFileId = MeasuredFileId;
             }
-            ProcessRow(timestamp);
-            _loadRepository.UpdateLoad(load);
-        }
 
-        private void CreateImportedFile(string fileName)
-        {
-            var importedFile = new ImportedFile { FileName = fileName };
-            _loadRepository.AddImportedFile(importedFile);
+            
+            _loadRepository.UpdateLoad(load);
         }
     }
 }
