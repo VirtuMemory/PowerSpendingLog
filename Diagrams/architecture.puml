@@ -1,0 +1,27 @@
+@startuml architecture
+
+skinparam style mint
+skinparam monochrome false
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+
+rectangle "Klijent" as Klijent #ADD8E6
+rectangle "Servis" as Servis #ADD8E6
+rectangle "Baza Podataka" as BazaPodataka #ADD8E6
+rectangle "XML baza podataka" as XMLBaza #FFD700
+rectangle "In-Memory baza podataka" as InMemoryBaza #FFD700
+rectangle "Common" as Common #90EE90
+
+Klijent -down-> Servis: WCF
+Servis -down-> BazaPodataka: Data
+InMemoryBaza -[hidden]up- BazaPodataka
+BazaPodataka -[hidden]down- XMLBaza
+
+Servis -up-> Common: Use
+Klijent -down-> Common: Use
+
+BazaPodataka <.left- XMLBaza: Impl
+BazaPodataka <.right- InMemoryBaza: Impl
+
+@enduml
