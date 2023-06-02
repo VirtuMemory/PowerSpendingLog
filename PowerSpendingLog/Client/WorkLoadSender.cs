@@ -1,11 +1,8 @@
 ﻿using Common;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Client
 {
@@ -62,19 +59,33 @@ namespace Client
             }
             var fileName = Path.GetFileName(filePath);
             WorkLoad workLoad = new WorkLoad(GetMemoryStream(filePath), fileName, dbType);
-            var res = proxy.ImportWorkLoad(workLoad);
 
-            workLoad.Dispose();
+            try
+            {
+                var res = proxy.ImportWorkLoad(workLoad);
 
-            if (res.ResultType == ResultTypes.Failed)
-            {
-                Console.WriteLine($"Upload file {fileName} unsuccesful. Error message: {res.ResultMessage}");
+                workLoad.Dispose();
+
+                if (res.ResultType == ResultTypes.Failed)
+                {
+                    Console.WriteLine($"Upload file {fileName} unsuccesful. Error message: {res.ResultMessage}");
+                }
+                else
+                {
+                    Console.WriteLine($"Upload file {fileName} imported succesfully.");
+                    importedFiles.Add(filePath);
+                }
             }
-            else
+            catch (FormatException ex)
             {
-                Console.WriteLine($"Upload file {fileName} imported succesfully.");
-                importedFiles.Add(filePath);
+                Console.WriteLine(ex.Message);
             }
+            catch (Exception ee)
+            {
+                Console.WriteLine(ee.Message);
+            }
+
+
         }
     }
 }

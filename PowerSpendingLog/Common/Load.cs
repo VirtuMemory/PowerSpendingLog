@@ -25,11 +25,11 @@ namespace Common
             Id = _nextId ;
         }
 
-        public void CalculateDeviations()
+        public bool CalculateDeviations()
         {
             if (ForecastValue == 0 || MeasuredValue == 0)
             {
-                throw new InvalidOperationException("ForecastValue i MeasuredValue moraju biti različiti od nule.");
+                return false;
             }
 
             // Pretpostavimo da je ime ključa u App.config "DeviationCalculationMethod"
@@ -39,10 +39,10 @@ namespace Common
             {
                 case "AbsolutePercentage":
                     AbsolutePercentageDeviation = Math.Abs(MeasuredValue - ForecastValue) / MeasuredValue * 100;
-                    break;
+                    return true;
                 case "Squared":
                     SquaredDeviation = Math.Pow((MeasuredValue - ForecastValue) / MeasuredValue, 2);
-                    break;
+                    return true;
                 default:
                     throw new InvalidOperationException($"Nepoznat metod za izračunavanje odstupanja: {method}");
             }

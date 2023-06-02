@@ -13,5 +13,6 @@ namespace Database
         Load GetLoad(DateTime timestamp);
         void UpdateLoad(Load load);
         void AddImportedFile(ImportedFile importedFile);
+        List<Load> GetAllLoads(DateTime timeStemp);
     }
 }

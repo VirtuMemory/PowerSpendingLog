@@ -31,6 +31,12 @@ namespace Database
             SerializeToFile(importedFiles, _importedFilePath);
         }
 
+        public List<Load> GetAllLoads(DateTime timeStemp)
+        {
+            var loads = DeserializeFromFile<List<Load>>(_loadFilePath) ?? new List<Load>();
+            return loads.Where(load => load.Timestamp.Date == timeStemp.Date).ToList();
+        }
+
         public Load GetLoad(DateTime timestamp)
         {
             var loads = DeserializeFromFile<List<Load>>(_loadFilePath) ?? new List<Load>();

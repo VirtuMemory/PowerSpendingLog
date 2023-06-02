@@ -1,11 +1,8 @@
 ﻿using Common;
 using System;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Linq;
+using System.IO;
 using System.ServiceModel;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Client
 {
@@ -19,15 +16,26 @@ namespace Client
                 type = DBType.INMEMORY;
             Console.WriteLine($"{type} is being used.");
 
-            ChannelFactory <ILoadService > factory = new ChannelFactory<ILoadService>("LoadService");
+            ChannelFactory<ILoadService> factory = new ChannelFactory<ILoadService>("LoadService");
             ILoadService proxy = factory.CreateChannel();
-            Console.WriteLine("Unesite putanju direktorijuma iz kojeg zelite da uciatte .csv fajlove");
-            var path = Console.ReadLine();
- 
-            WorkLoadSender sender = new WorkLoadSender(type,path,proxy);
-            sender.SendFiles();
+            while (true)
+            {
+                Console.WriteLine("Unesite putanju direktorijuma iz kojeg zelite da uciatte .csv fajlove");
+                var path = Console.ReadLine();
+                if (!Directory.Exists(path))
+                {
+                    Console.WriteLine("Uneli ste ne postojecu putanju, pokusajte ponovo");
+                    continue;
+                }
 
-            Console.ReadLine();
+                WorkLoadSender sender = new WorkLoadSender(type, path, proxy);
+                sender.SendFiles();
+
+                Console.WriteLine("Unesite EXIT za izlazak iz programa ili bilo koje dugme da nastavite sa unosom");
+                if (Console.ReadLine().ToUpper().Equals("EXIT"))
+                    break;
+            }
+
         }
     }
 }

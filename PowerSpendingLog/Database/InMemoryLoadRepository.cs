@@ -29,6 +29,11 @@ namespace Database
             ImportedFile._nextId++;
         }
 
+        public List<Load> GetAllLoads(DateTime timeStemp)
+        {
+            return IMLoad.Values.Where(load => load.Timestamp.Date == timeStemp.Date).ToList();
+        }
+
         public Load GetLoad(DateTime timestamp)
         {
             return IMLoad.Values.FirstOrDefault(load => load.Timestamp == timestamp);

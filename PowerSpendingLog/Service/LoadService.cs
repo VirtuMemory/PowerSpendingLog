@@ -7,10 +7,33 @@ namespace Service
 {
     public class LoadService : ILoadService
     {
+        public delegate void UpdateDatabaseHandler(Load load);
+        public event UpdateDatabaseHandler UpdateDatabase;
         private ILoadRepository _loadRepository;
         private bool db = false;
+        private int processedRows = 1;
+        private int totalRows = 0;
         private static int ForecastFileId = -1;
         private static int MeasuredFileId = -1;
+
+
+        private void ProcessRow(DateTime timeStemp)
+        {
+            
+            if (processedRows == totalRows)
+            {
+                bool done = false;
+                foreach(Load load in _loadRepository.GetAllLoads(timeStemp))
+                {
+                    done =  load.CalculateDeviations();
+                    UpdateDatabase?.Invoke(load);
+
+                }
+                if (done)
+                    Console.WriteLine($"DB updated with calculated deviations for {timeStemp.ToString("yyyy MM dd")} Loads");
+            }
+            processedRows++;
+        }
 
         public Result ImportWorkLoad(WorkLoad workLoad)
         {
@@ -18,6 +41,14 @@ namespace Service
             if (!db)
             {
                 _loadRepository = DatabaseFactory.CreateDatabase(workLoad.DbType);
+                if (_loadRepository is XMLLoadRepository)
+                {
+                    UpdateDatabase += _loadRepository.UpdateLoad;
+                }
+                else if (_loadRepository is InMemoryLoadRepository)
+                {
+                    UpdateDatabase += _loadRepository.UpdateLoad;
+                }
                 db = true;
             }
 
@@ -67,6 +98,7 @@ namespace Service
             }
             else
             {
+                totalRows = linesCount;
                 foreach (var line in lines)
                 {
                     if (line.Equals("")) 
@@ -99,6 +131,7 @@ namespace Service
 
             // Kreiranje objekta ImportedFile
             CreateImportedFile(workLoad.FileName);
+            processedRows = 1;
             Console.WriteLine(workLoad.FileName);
             return result;
         }
@@ -123,7 +156,7 @@ namespace Service
                 load.MeasuredValue = consumption;
                 load.MeasuredFileId = MeasuredFileId;
             }
-
+            ProcessRow(timestamp);
             _loadRepository.UpdateLoad(load);
         }
 

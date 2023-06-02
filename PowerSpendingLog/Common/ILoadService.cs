@@ -12,7 +12,6 @@ namespace Common
     public interface ILoadService
     {
         [OperationContract]
-        [FaultContract(typeof(FileNotFoundException))]
         [FaultContract(typeof(FormatException))]
         Result ImportWorkLoad(WorkLoad workLoad);
     }
