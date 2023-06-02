@@ -9,7 +9,7 @@ namespace Service
         public delegate void UpdateDatabaseHandler(Load load);
         public event UpdateDatabaseHandler UpdateDatabase;
         private ILoadRepository _loadRepository;
-        private FileProcessingHelper _fileProcessingHelper;
+        private readonly FileProcessingHelper _fileProcessingHelper;
         private bool db = false;
         private int processedRows = 1;
         private int totalRows = 0;
@@ -37,7 +37,7 @@ namespace Service
                     UpdateDatabase?.Invoke(load);
                 }
                 if (done)
-                    Console.WriteLine($"DB updated with calculated deviations for {timeStemp.ToString("yyyy MM dd")} Loads");
+                    Console.WriteLine($"DB updated with calculated deviations for {timeStemp:yyyy MM dd} Loads");
             }
         }
 
@@ -49,7 +49,7 @@ namespace Service
 
         public Result ImportWorkLoad(WorkLoad workLoad)
         {
-            Result result = new Result();
+            Result result;
             if (!db)
             {
                 SetLoadRepository(workLoad.DbType);
